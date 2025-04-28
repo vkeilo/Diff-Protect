@@ -23,8 +23,7 @@ import time
 import wandb
 import glob
 import hydra
-from utils import mp, si, cprint
-
+from utils import mp, si, cprint, parse_args
 
 
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -186,22 +185,24 @@ def init(epsilon: int = 16, steps: int = 100, alpha: int = 1,
     :returns: a dictionary containing model and config.
     """
 
-    if ckpt is None:
-        ckpt = 'ckpt/model.ckpt'
+    # if ckpt is None:
+    #     ckpt = 'ckpt/model.ckpt'
 
-    if base is None:
-        base = 'configs/stable-diffusion/v1-inference-attack.yaml'
+    # if base is None:
+    #     base = 'configs/stable-diffusion/v1-inference-attack.yaml'
 
     # seed_everything(seed)
-    imagenet_templates_small_style = ['a painting']
-    
-    imagenet_templates_small_object = ['a photo']
+    # imagenet_templates_small_style = ['a painting']
+    # imagenet_templates_small_object = ['a photo']
 
-    config_path = os.path.join(os.getcwd(), base)
-    config = OmegaConf.load(config_path)
+    # config_path = os.path.join(os.getcwd(), base)
+    # config = OmegaConf.load(config_path)
+    config = OmegaConf.load(base)
 
-    ckpt_path = os.path.join(os.getcwd(), ckpt)
-    model = load_model_from_config(config, ckpt_path, device=device).to(device)
+    # ckpt_path = os.path.join(os.getcwd(), ckpt)
+    # model = load_model_from_config(config, ckpt_path, device=device).to(device)
+    ckpt_path = ckpt
+    model = load_model_from_config(config, ckpt_path).to(device)
 
     fn = identity_loss()
 
@@ -323,7 +324,7 @@ def infer(img: PIL.Image.Image, config, tar_img: PIL.Image.Image = None, diff_pg
         
     
     # print(net(attack_output, components=True))
-
+    print(f"attack_output shape: {attack_output.shape}")
     output = attack_output[0]
     save_adv = torch.clamp((output + 1.0) / 2.0, min=0.0, max=1.0).detach()
     grid_adv = 255. * rearrange(save_adv, 'c h w -> h w c').cpu().numpy()
@@ -337,28 +338,27 @@ def infer(img: PIL.Image.Image, config, tar_img: PIL.Image.Image = None, diff_pg
 # the image blockwisely for lower VRAM cost
 
 
-@hydra.main(version_base=None, config_path="../configs/attack", config_name="base")
-def main(cfg : DictConfig):
-    print(cfg.attack)
+# @hydra.main(version_base=None, config_path="../configs/attack", config_name="base")
+def main():
     time_start = time.time()
-    
-    args = cfg.attack
-    
-    
-    
-    
-    
+    args = parse_args()
+
+    # args = cfg.attack
     epsilon = args.epsilon
     steps = args.steps
     input_size = args.input_size
     mode = args.mode
     alpha = args.alpha
-    rate = args.target_rate if not mode == 'mist' else 1e4
+    # rate = args.target_rate if not mode == 'mist' else 1e4
+    rate = args.target_rate
     g_mode = args.g_mode
-    output_path, img_path = args.output_path, args.img_path
-    diff_pgd = args.diff_pgd
+    output_path, img_path = args.output_path, args.input_dir_path
+    diff_pgd = args.diff_pgd.split(',')
+    diff_pgd[0] = diff_pgd[0]=='True'
+    diff_pgd[1] = float(diff_pgd[1])
     using_target = args.using_target
-    device=args.device
+    device=torch.device('cuda') if torch.cuda.is_available() else 'cpu'
+
     # print all args:
     print(f"epsilon: {epsilon}")
     print(f"steps: {steps}")
@@ -373,53 +373,59 @@ def main(cfg : DictConfig):
     print(f"img_path: {img_path}")
     print(f"diff_pgd: {diff_pgd}")
     print(f"device: {device}")
+
+
+    
     
     if using_target and mode == 'sds':
         mode_name = f'{mode}T{rate}'
     else:
         mode_name = mode
 
-    output_path = output_path + f'/{mode_name}_eps{epsilon}_steps{steps}_gmode{g_mode}'
-    if diff_pgd[0]:
-        output_path = output_path + '_diffpgd/'
-    else:
-        output_path += '/'
+    # output_path = output_path + f'/{mode_name}_eps{epsilon}_steps{steps}_gmode{g_mode}'
+    # if diff_pgd[0]:
+    #     output_path = output_path + '_diffpgd/'
+    # else:
+    #     output_path += '/'
     
     mp(output_path)
-    
-    input_prompt = 'a photo'
-    if 'anime' in img_path:
-        input_prompt = 'an anime picture'
-    elif 'artwork' in img_path:
-        input_prompt = 'an artwork painting'
-    elif 'landscape' in img_path:
-        input_prompt = 'a landscape photo'
-    elif 'portrait' in img_path:
-        input_prompt = 'a portrait photo'
-    else:
-        input_prompt = 'a photo'
+    input_prompt = args.concept_prompt
+    # input_prompt = 'a photo'
+    # if 'anime' in img_path:
+    #     input_prompt = 'an anime picture'
+    # elif 'artwork' in img_path:
+    #     input_prompt = 'an artwork painting'
+    # elif 'landscape' in img_path:
+    #     input_prompt = 'a landscape photo'
+    # elif 'portrait' in img_path:
+    #     input_prompt = 'a portrait photo'
+    # else:
+    #     input_prompt = 'a photo'
         
     
     
     
     config = init(epsilon=epsilon, alpha=alpha, steps=steps, 
                   mode=mode, rate=rate, g_mode=g_mode, device=device, 
-                  input_prompt=input_prompt)
-
+                  input_prompt=input_prompt, base=args.model_config,ckpt=args.model_path)
+    # config = init(epsilon=epsilon, alpha=alpha, steps=steps, 
+    #               mode=mode, rate=rate, g_mode=g_mode, device=device, 
+    #               input_prompt=input_prompt)
     
     img_paths = glob.glob(img_path+'/*.png') + glob.glob(img_path+'/*.jpg') + glob.glob(img_path+'/*.jpeg')
     
     # img_paths.sort(key=lambda x: int(x[x.rfind('/')+1:x.rfind('.')]))
     
     img_path = img_path[:args.max_exp_num]
-    
+    output_path = os.path.join(output_path,"noise-ckpt")
+    os.mkdir(output_path)
+    print(f'dir {output_path} created')
     for image_path in tqdm(img_paths):
         cprint(f'Processing: [{image_path}]', 'y')
         
         rsplit_image_path = image_path.rsplit('/')
-        file_name = f"/{rsplit_image_path[-2]}/{rsplit_image_path[-1]}/"
-        file_name = file_name.rsplit('.')[0]
-        mp(output_path + file_name)
+        file_name = f"{rsplit_image_path[-1]}"
+        # mp(output_path + file_name)
         
         
         target_image_path = 'test_images/target/MIST.png'
@@ -438,17 +444,19 @@ def main(cfg : DictConfig):
                 img_block = Image.fromarray(np.array(img)[bls*i: bls*i+bls, bls*j: bls*j + bls])
                 tar_block = Image.fromarray(np.array(tar_img)[bls*i: bls*i+bls, bls*j: bls*j + bls])
                 output_image[bls*i: bls*i+bls, bls*j: bls*j + bls], edit_one_step, edit_multi_step = infer(img_block, config, tar_block, diff_pgd=diff_pgd, using_target=using_target, device=device)
-        
+        print(f"max diff A {torch.abs(torch.Tensor(output_image-img)).max()}")
         output = Image.fromarray(output_image.astype(np.uint8))
-        
         time_start_sdedit = time.time()
-        si(edit_one_step, output_path + f'{file_name}_onestep.png')
-        si(edit_multi_step, output_path + f'{file_name}_multistep.png')
+
+        # DiffAdvPerturbationBench only need attacked image
+        # si(edit_one_step, output_path + f'{file_name}_onestep.png')
+        # si(edit_multi_step, output_path + f'{file_name}_multistep.png')
         print('SDEdit takes: ', time.time() - time_start_sdedit)
         
         
-        output_name = output_path + f'/{file_name}_attacked.png'
-        
+        # output_name = output_path + f'/{file_name}_attacked.png'
+        # output_name = output_path + f'/noisy_{file_name}'
+        output_name = os.path.join(output_path, f'noisy_{file_name}')
         output.save(output_name)
         
         
@@ -457,3 +465,4 @@ def main(cfg : DictConfig):
 
 if __name__ == '__main__':
     main()
+    print('exp finished')

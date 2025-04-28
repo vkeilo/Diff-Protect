@@ -9,9 +9,120 @@ import glob
 import cv2
 from skimage.metrics import structural_similarity as ssim
 from clip_similarity import clip_sim
+import argparse
 
 totensor = transforms.ToTensor()
 topil = transforms.ToPILImage()
+
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Configs for diff_mist.py")
+    parser.add_argument(
+        "--output_path",
+        type=str,
+        default="vangogh",
+        help="path of output dir",
+    )
+    parser.add_argument(
+        "-inp",
+        "--input_dir_path",
+        type=str,
+        default=None,
+        help="Path of the dir of images to be processed.",
+    )
+    parser.add_argument(
+        "-e",
+        "--epsilon",
+        type=int,
+        default=16,
+        help=(
+            "The strength of Mist"
+        ),
+    )
+    parser.add_argument(
+        "-s",
+        "--steps",
+        type=int,
+        default=100,
+        help=(
+            "The step of Mist"
+        ),
+    )
+    parser.add_argument(
+        "-in_size",
+        "--input_size",
+        type=int,
+        default=512,
+        help=(
+            "The input_size of Mist"
+        ),
+    )
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="sds",
+        help=(
+            "The mode of test(sdd/mist)."
+        ),
+    )
+    parser.add_argument(
+        "--concept_prompt",
+        type=str,
+        default="a painting",
+        help=(
+            "Prompt of the concept we want to protect."
+        ),
+    )
+    parser.add_argument(
+        "--model_path",
+        type=str,
+        default="",
+        help=(
+            "ckpt path of the model."
+        ),
+    )
+    parser.add_argument(
+        "--model_config",
+        type=str,
+        default="",
+        help=(
+            "yaml config path of the model."
+        ),
+    )
+    parser.add_argument(
+        "--alpha",
+        type=int,
+        default=1,
+    )
+    parser.add_argument(
+        "--g_mode",
+        type=str,
+        default="-",
+    )
+    parser.add_argument(
+        "--diff_pgd",
+        type=str,
+        default="False,0.2,ddim100",
+    )
+    parser.add_argument(
+        "--using_target",
+        type=bool,
+        default=False,
+    )
+    parser.add_argument(
+        "--target_rate",
+        type=int,
+        default=5,
+    )
+    parser.add_argument(
+        "--max_exp_num",
+        type=int,
+        default=100,
+    )
+    args = parser.parse_args()
+    return args
+
 
 def recover_image(image, init_image, mask, background=False):
     image = totensor(image)

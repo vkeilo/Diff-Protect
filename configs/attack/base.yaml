@@ -3,8 +3,8 @@ attack:
     steps: 100
     input_size: 512
     mode: sds
-    img_path: test_images/to_protect
-    output_path: out/
+    img_path: /data/home/yekai/github/DiffAdvPerturbationBench/datasets/VGGFace2-clean/0/set_B
+    output_path: out_vk/
     alpha: 1
     g_mode: "-"
     use_wandb: False

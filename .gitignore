@@ -5,3 +5,17 @@ hub/
 __pycache__
 *.py[cod]
 *.sw[pon]
+
+
+data/
+out
+.vscode
+.DS_Store
+run_in_batch/*.json
+wandb
+outputs
+*.log
+exp_datas_output/*
+!exp_datas_output/*.sh
+*.pyc
+finished_test
