@@ -71,30 +71,31 @@ def generate_lin_interval_list(start, end, num):
 # target_rate: 5
 # device: 0
 # max_exp_num: 100
-EXPERIMENT_NAME = "PhotoGuard"
-test_lable = f"{EXPERIMENT_NAME}_SD21_VGGFace2_random50_r4p8p12p16_test"
+EXPERIMENT_NAME = "SDSrev"
+test_lable = f"{EXPERIMENT_NAME}_SD21_VGGFace2_random50_r4p8p12p16"
 
 params_options = {
     "EXPERIMENT_NAME": [EXPERIMENT_NAME],
-    "mode":["texture_only"],
+    "mode":["sds"],
     "data_path": [f"{proj_abs_path}/datasets"],
     "dataset_name":["VGGFace2-clean"],
-    # "data_id":[i for i in range(50)],
-    "data_id":[0,1],
+    "data_id":[i for i in range(50)],
     # "data_id":[0,1],
-    "r": [16],
+    # "data_id":[0,1],
+    "r": [4,8,12,16],
     "attack_steps": [100],
     # "mixed_precision":['fp16'],
     "alpha": [1],
-    "g_mode": ["+"],
+    "g_mode": ["-"],
     "diff_pgd":["False,0.2,'ddim100'"],
     "using_target": [False],
     "target_rate": [1],
     "max_exp_num": [100],
-    "model_path":['/data/home/yekai/github/DiffAdvPerturbationBench/Algorithms/Diff-Protect/ckpt/model.ckpt'],
-    # "model_path":['/data/home/yekai/github/MetaCloak-local/SD/v2-1_512-ema-pruned.ckpt'],
-    "model_config":['/data/home/yekai/github/DiffAdvPerturbationBench/Algorithms/Diff-Protect/configs/stable-diffusion/v1-inference-attack.yaml'],
-    # "model_config":['/data/home/yekai/github/DiffAdvPerturbationBench/Algorithms/mist/configs/stable-diffusion/v2-inference-v-attack.yaml'],
+    "db_lr":[5e-7],
+    # "model_path":['/data/home/yekai/github/DiffAdvPerturbationBench/Algorithms/Diff-Protect/ckpt/model.ckpt'],
+    "model_path":['/data/home/yekai/github/MetaCloak-local/SD/v2-1_512-ema-pruned.ckpt'],
+    # "model_config":['/data/home/yekai/github/DiffAdvPerturbationBench/Algorithms/Diff-Protect/configs/stable-diffusion/v1-inference-attack.yaml'],
+    "model_config":['/data/home/yekai/github/DiffAdvPerturbationBench/Algorithms/mist/configs/stable-diffusion/v2-inference-v-attack.yaml'],
     "concept_prompt":['a photo'],
     "input_size": [512],
 }

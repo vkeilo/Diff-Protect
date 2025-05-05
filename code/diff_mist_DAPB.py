@@ -418,7 +418,11 @@ def main():
     
     img_path = img_path[:args.max_exp_num]
     output_path = os.path.join(output_path,"noise-ckpt")
-    os.mkdir(output_path)
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
+    output_path = os.path.join(output_path,str(args.steps))
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
     print(f'dir {output_path} created')
     for image_path in tqdm(img_paths):
         cprint(f'Processing: [{image_path}]', 'y')
